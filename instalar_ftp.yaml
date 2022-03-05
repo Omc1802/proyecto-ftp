@@ -1,0 +1,38 @@
+- hosts: pruebas
+  become: yes
+  tasks:
+    - name: Instalar FTP en ubuntu
+      apt:
+        name: vsftpd 
+        state: latest 
+        update_cache: yes 
+    - name: directorio home para usuario ftp anónimo
+      file: 
+        path: /home/FTPanon
+        state: directory
+        mode: 0755
+    - name: modificando configuracion de ftp
+      become: yes
+      lineinfile:
+        dest: /etc/vsftpd.conf
+        backup: yes
+        backrefs: yes
+        state: present
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      with_items:
+        - { regexp: anonymous_enable=NO, line: anonymous_enable=YES }
+        - { regexp: listen=NO, line: listen=YES }
+        - { regexp: listen_ipv6=YES, line: listen_ipv6=NO }
+        - { regexp: anon_upload_enable, line: anon_upload_enable=NO }
+        - { regexp: anon_mkdir_write_enable, line: anon_mkdir_write_enable=NO }
+        - { regexp: write_enable, line: write_enable=YES }
+    - name: nueva linea fichero conf
+      lineinfile:
+        dest: /etc/vsftpd.conf
+        line: 'anon_root=/FTPanon'
+    - name: Iniciar el servicio FTP 
+      service:
+        name: vsftpd
+        state: restarted
+        enabled: yes
